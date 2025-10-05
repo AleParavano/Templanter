@@ -1,41 +1,38 @@
-# Prerequisites
-*.d
-
 # Compiled Object files
-*.slo
-*.lo
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
 *.exe
 *.out
 *.app
 
-# debug information files
-*.dwo
+# Build directories
+build/
+bin/
+obj/
+.vs/
+.vscode/settings.json
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Save files (optional - include if you don't want saves in repo)
+saves/*.json
+
+# IDE specific
+.DS_Store
+*.suo
+*.user
+*.sln.docstates
+
+# Libraries
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
+
+# SFML (if you include it locally, otherwise remove)
+# SFML/

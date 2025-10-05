@@ -1,0 +1,91 @@
+{
+    "economy": {
+        "currency": 1234.56,
+        "rating": 4.2
+    },
+    "greenhouse": {
+        "height": 3,
+        "plants": [
+            {
+                "growthProgress": 50,
+                "id": 0,
+                "lastWateredTime": 123456,
+                "posX": 0,
+                "posY": 0,
+                "state": "Growing",
+                "type": "Tomato",
+                "waterLevel": 80
+            },
+            {
+                "growthProgress": 100,
+                "id": 1,
+                "lastWateredTime": 123460,
+                "posX": 1,
+                "posY": 0,
+                "state": "Ripe",
+                "type": "Basil",
+                "waterLevel": 90
+            }
+        ],
+        "width": 3
+    },
+    "inventory": {
+        "harvestedPlants": [
+            {
+                "quantity": 5,
+                "type": "Tomato"
+            },
+            {
+                "quantity": 3,
+                "type": "Basil"
+            }
+        ],
+        "nutrients": 20,
+        "seeds": [
+            {
+                "quantity": 10,
+                "type": "Tomato"
+            },
+            {
+                "quantity": 5,
+                "type": "Rose"
+            }
+        ],
+        "storageCapacity": 40
+    },
+    "metadata": {
+        "saveName": "Day 10 - $1234",
+        "timestamp": "2025-10-05 21:40:36",
+        "version": "1.0"
+    },
+    "statistics": {
+        "achievementsUnlocked": [
+            "First Sale",
+            "Green Thumb"
+        ],
+        "totalCustomersServed": 30,
+        "totalMoneyEarned": 1500.5,
+        "totalPlantsGrown": 25,
+        "totalRobberiesStopped": 2
+    },
+    "time": {
+        "day": 10,
+        "hour": 14,
+        "minute": 30
+    },
+    "workers": [
+        {
+            "assignedZone": 0,
+            "cashierSkill": 1,
+            "currentRole": "Waterer",
+            "experience": 250,
+            "harvestingSkill": 2,
+            "id": 0,
+            "name": "Alice",
+            "overallLevel": 5,
+            "salary": 65.0,
+            "securitySkill": 1,
+            "wateringSkill": 3
+        }
+    ]
+}
