@@ -3,35 +3,51 @@
 
 #include <string>
 #include <ctime>
-#include "Core/GameData.h"                     // ← Should be this
-#include "PlantTypes.h"                        // ← This is fine (same directory)
-#include "Patterns/State/PlantState.h"         // ← Fixed
-#include "Patterns/Observer/Observer.h"        // ← Fixed
-#include "Patterns/Template/GrowthCycle.h"     // ← Fixed
-
-// ... rest of file
+#include "Core/GameData.h"
+#include "PlantTypes.h"
+#include "Patterns/State/PlantState.h"
+#include "Patterns/Observer/PlantSubject.h"
+#include "Patterns/Template/GrowthCycle.h"
 
 // Forward declarations
 class PlantState;
 class GrowthCycle;
+class Observer;
 
-// Main Plant class - uses State, Observer, Template, and Flyweight patterns
+// ============================================
+// PLANT CLASS
+// ============================================
+// Combines multiple design patterns:
+// - State Pattern: Plant growth states
+// - Observer Pattern: Plant is an observable subject
+// - Template Method: Growth cycle algorithm
+// - Flyweight: Shares PlantTypeInfo data
 class Plant {
 private:
-    // Unique plant data (not shared)
+    // ============================================
+    // UNIQUE PLANT DATA (Not shared)
+    // ============================================
     int id;
     int posX, posY;
     
-    // Flyweight: Reference to shared data
+    // ============================================
+    // FLYWEIGHT PATTERN: Reference to shared data
+    // ============================================
     PlantType plantType;
     
-    // State Pattern
+    // ============================================
+    // STATE PATTERN: Current state
+    // ============================================
     PlantState* currentState;
     
-    // Template Method Pattern
+    // ============================================
+    // TEMPLATE METHOD PATTERN: Growth algorithm
+    // ============================================
     GrowthCycle* growthCycle;
     
-    // Growth tracking
+    // ============================================
+    // GROWTH TRACKING
+    // ============================================
     float growthProgress;      // 0-100%
     int waterLevel;            // 0-100%
     std::time_t lastWateredTime;
@@ -41,42 +57,66 @@ private:
     float growthModifier;
     float pendingGrowth;
     
-    // Observer subject
+    // ============================================
+    // OBSERVER PATTERN: This plant is a subject
+    // ============================================
     PlantSubject* subject;
     
-    // Flags
+    // Notification flags (prevent spam)
     bool needsWaterNotified;
     bool ripeNotified;
+    bool decayingNotified;
+    bool deadNotified;
 
 public:
+    // ============================================
+    // CONSTRUCTOR & DESTRUCTOR
+    // ============================================
     Plant(int plantId, PlantType type, int x, int y);
     ~Plant();
     
-    // Main update
+    // Delete copy constructor and assignment (prevent accidental copying)
+    Plant(const Plant&) = delete;
+    Plant& operator=(const Plant&) = delete;
+    
+    // ============================================
+    // MAIN UPDATE LOOP
+    // ============================================
     void update(float deltaTime);
     
-    // Actions
+    // ============================================
+    // PLAYER ACTIONS
+    // ============================================
     void water();
-    bool harvest(int& value);  // Returns harvest value
-    void applyNutrient();      // Switch to boosted growth
+    bool harvest(int& value);
+    void applyNutrient();
     
-    // State management
+    // ============================================
+    // STATE PATTERN: State management
+    // ============================================
     void setState(PlantState* newState);
     PlantState* getState() const { return currentState; }
     std::string getStateName() const;
     
-    // Observer management
-    void addObserver(PlantObserver* observer);
-    void removeObserver(PlantObserver* observer);
-    void notifyObservers(const std::string& event);
+    // ============================================
+    // OBSERVER PATTERN: Attach/detach observers
+    // ============================================
+    void attach(Observer* observer);
+    void detach(Observer* observer);
+    PlantSubject* getSubject() const { return subject; }
     
-    // Getters
+    // ============================================
+    // GETTERS: Basic info
+    // ============================================
     int getId() const { return id; }
     int getPosX() const { return posX; }
     int getPosY() const { return posY; }
     PlantType getPlantType() const { return plantType; }
     const PlantTypeInfo& getPlantTypeInfo() const;
     
+    // ============================================
+    // GETTERS: Growth state
+    // ============================================
     float getGrowthProgress() const { return growthProgress; }
     int getWaterLevel() const { return waterLevel; }
     std::time_t getLastWateredTime() const { return lastWateredTime; }
@@ -87,7 +127,9 @@ public:
     bool canHarvest() const;
     int getSpriteIndex() const;
     
-    // Setters (used by states and growth cycles)
+    // ============================================
+    // SETTERS: Used by states and growth cycles
+    // ============================================
     void setGrowthProgress(float progress);
     void addGrowthProgress(float progress);
     void setWaterLevel(int level);
@@ -96,11 +138,15 @@ public:
     void setGrowthModifier(float modifier) { growthModifier = modifier; }
     void setPendingGrowth(float growth) { pendingGrowth = growth; }
     
-    // Water level management
+    // ============================================
+    // WATER MANAGEMENT
+    // ============================================
     void updateWaterLevel(float deltaTime);
     bool needsWater() const;
     
-    // Serialization (for save/load)
+    // ============================================
+    // SERIALIZATION: For save/load via Memento
+    // ============================================
     PlantData serialize() const;
     static Plant* deserialize(const PlantData& data);
 };

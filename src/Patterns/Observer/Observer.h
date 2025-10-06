@@ -1,34 +1,19 @@
 #ifndef OBSERVER_H
 #define OBSERVER_H
 
-#include <string>
-#include <vector>
+// Forward declaration
+class Subject;
 
-// Forward declarations
-class Plant;
-
-// Observer Pattern: Observer interface
-class PlantObserver {
+// ============================================
+// OBSERVER (Abstract Interface)
+// ============================================
+// Observer gets notified when Subject changes
+class Observer {
 public:
-    virtual ~PlantObserver() = default;
-    virtual void onPlantNeedsWater(Plant* plant) = 0;
-    virtual void onPlantRipe(Plant* plant) = 0;
-    virtual void onPlantDecaying(Plant* plant) = 0;
-};
-
-// Observer Pattern: Subject (Observable)
-class PlantSubject {
-private:
-    std::vector<PlantObserver*> observers;
-
-public:
-    virtual ~PlantSubject() = default;
+    virtual ~Observer() = default;
     
-    void addObserver(PlantObserver* observer);
-    void removeObserver(PlantObserver* observer);
-    void notifyNeedsWater(Plant* plant);
-    void notifyRipe(Plant* plant);
-    void notifyDecaying(Plant* plant);
+    // Called when the subject this observer is watching changes
+    virtual void update(Subject* subject) = 0;
 };
 
 #endif // OBSERVER_H

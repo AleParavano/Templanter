@@ -4,21 +4,24 @@
 #include <vector>
 #include <queue>
 #include <string>
-#include "Patterns/Observer/Observer.h"  // ← ADD THIS
+#include "Patterns/Observer/PlantObserver.h"
 
 // Forward declarations
 class Worker;
 class Plant;
 class Command;
 
+// ============================================
+// CONCRETE OBSERVER: WorkScheduler
+// ============================================
 // Mediator Pattern: Coordinates workers and tasks
-// Also implements Observer Pattern to watch plants
-class WorkScheduler : public PlantObserver {  // ← ADD THIS INHERITANCE
+// Observer Pattern: Observes plants and assigns tasks when events occur
+class WorkScheduler : public PlantObserver {
 private:
     std::vector<Worker*> workers;
     std::queue<Command*> globalTaskQueue;
     
-    // Task assignment strategies
+    // Helper methods
     Worker* findBestWorkerForTask(const std::string& taskType);
     Worker* findAvailableWorker();
     
@@ -26,12 +29,17 @@ public:
     WorkScheduler();
     ~WorkScheduler();
     
-    // Observer Pattern implementation
+    // ============================================
+    // Observer Pattern: Implement PlantObserver interface
+    // ============================================
     void onPlantNeedsWater(Plant* plant) override;
     void onPlantRipe(Plant* plant) override;
     void onPlantDecaying(Plant* plant) override;
+    void onPlantDead(Plant* plant) override;
     
-    // Worker management
+    // ============================================
+    // Mediator Pattern: Worker and task management
+    // ============================================
     void registerWorker(Worker* worker);
     void unregisterWorker(Worker* worker);
     std::vector<Worker*> getWorkers() const { return workers; }
@@ -40,10 +48,6 @@ public:
     void assignTask(Command* task, const std::string& taskType);
     void distributeTaskToWorkers(Command* task);
     void processGlobalTasks();
-    
-    // Notifications (deprecated - now uses Observer pattern)
-    void notifyPlantNeedsWater(Plant* plant);
-    void notifyPlantRipe(Plant* plant);
     
     // Worker queries
     int getAvailableWorkerCount() const;

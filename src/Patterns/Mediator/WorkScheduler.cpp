@@ -6,6 +6,7 @@
 #include <algorithm>
 
 WorkScheduler::WorkScheduler() {
+    std::cout << "📋 WorkScheduler initialized" << std::endl;
 }
 
 WorkScheduler::~WorkScheduler() {
@@ -15,124 +16,194 @@ WorkScheduler::~WorkScheduler() {
         globalTaskQueue.pop();
         delete cmd;
     }
+    
+    std::cout << "📋 WorkScheduler destroyed" << std::endl;
 }
 
 // ============================================
-// Observer Pattern Implementation
+// OBSERVER PATTERN: Concrete Observer Implementation
 // ============================================
+
 void WorkScheduler::onPlantNeedsWater(Plant* plant) {
-    if (plant == nullptr) return;
+    if (plant == nullptr) {
+        std::cerr << "WorkScheduler::onPlantNeedsWater - null plant" << std::endl;
+        return;
+    }
     
-    std::cout << "🚨 WorkScheduler: Plant needs water!" << std::endl;
+    std::cout << "🚨 WorkScheduler observed: Plant needs water at (" 
+              << plant->getPosX() << ", " << plant->getPosY() << ")" << std::endl;
     
-    // Create water command
+    // Create water command and assign to appropriate worker
     Command* waterCmd = new WaterPlantCommand(nullptr, plant);
     assignTask(waterCmd, "Waterer");
 }
 
 void WorkScheduler::onPlantRipe(Plant* plant) {
-    if (plant == nullptr) return;
+    if (plant == nullptr) {
+        std::cerr << "WorkScheduler::onPlantRipe - null plant" << std::endl;
+        return;
+    }
     
-    std::cout << "✅ WorkScheduler: Plant is ripe!" << std::endl;
+    std::cout << "✅ WorkScheduler observed: Plant is ripe at (" 
+              << plant->getPosX() << ", " << plant->getPosY() << ")" << std::endl;
     
-    // Create harvest command
+    // Create harvest command and assign to appropriate worker
     Command* harvestCmd = new HarvestPlantCommand(nullptr, plant);
     assignTask(harvestCmd, "Harvester");
 }
 
 void WorkScheduler::onPlantDecaying(Plant* plant) {
-    if (plant == nullptr) return;
+    if (plant == nullptr) {
+        std::cerr << "WorkScheduler::onPlantDecaying - null plant" << std::endl;
+        return;
+    }
     
-    std::cout << "⚠️  WorkScheduler: Plant is decaying!" << std::endl;
+    std::cout << "⚠️  WorkScheduler observed: Plant is decaying at (" 
+              << plant->getPosX() << ", " << plant->getPosY() << ")" << std::endl;
     
-    // Priority harvest before it dies
+    // Urgent harvest command - decaying plants should be harvested immediately
     Command* harvestCmd = new HarvestPlantCommand(nullptr, plant);
     assignTask(harvestCmd, "Harvester");
 }
 
+void WorkScheduler::onPlantDead(Plant* plant) {
+    if (plant == nullptr) {
+        std::cerr << "WorkScheduler::onPlantDead - null plant" << std::endl;
+        return;
+    }
+    
+    std::cout << "💀 WorkScheduler observed: Plant died at (" 
+              << plant->getPosX() << ", " << plant->getPosY() << ")" << std::endl;
+    
+    // Dead plants need to be removed (could create a RemovePlantCommand)
+    // For now, just log the event
+}
+
 // ============================================
-// Rest of the implementation stays the same
+// MEDIATOR PATTERN: Worker Management
 // ============================================
 
 void WorkScheduler::registerWorker(Worker* worker) {
-    if (worker != nullptr) {
-        workers.push_back(worker);
-        std::cout << "📋 WorkScheduler: Registered worker" << std::endl;
+    if (worker == nullptr) {
+        std::cerr << "WorkScheduler::registerWorker - null worker" << std::endl;
+        return;
     }
+    
+    workers.push_back(worker);
+    std::cout << "📋 WorkScheduler: Registered worker '" << worker->getName() 
+              << "' (Total: " << workers.size() << ")" << std::endl;
 }
 
 void WorkScheduler::unregisterWorker(Worker* worker) {
+    if (worker == nullptr) {
+        return;
+    }
+    
     auto it = std::find(workers.begin(), workers.end(), worker);
     if (it != workers.end()) {
+        std::string name = (*it)->getName();
         workers.erase(it);
-        std::cout << "📋 WorkScheduler: Unregistered worker" << std::endl;
+        std::cout << "📋 WorkScheduler: Unregistered worker '" << name 
+                  << "' (Remaining: " << workers.size() << ")" << std::endl;
     }
 }
 
 Worker* WorkScheduler::findBestWorkerForTask(const std::string& taskType) {
+    // First, try to find a worker with the specific role who is not busy
     for (auto* worker : workers) {
         if (!worker->getIsBusy() && worker->hasRole(taskType)) {
             return worker;
         }
     }
+    
+    // No suitable worker found
     return nullptr;
 }
 
 Worker* WorkScheduler::findAvailableWorker() {
+    // Find any worker who is not busy
     for (auto* worker : workers) {
         if (!worker->getIsBusy()) {
             return worker;
         }
     }
+    
+    // No available worker
     return nullptr;
 }
 
 void WorkScheduler::assignTask(Command* task, const std::string& taskType) {
-    if (task == nullptr) return;
+    if (task == nullptr) {
+        std::cerr << "WorkScheduler::assignTask - null task" << std::endl;
+        return;
+    }
     
+    // Try to find best worker for this task type
     Worker* worker = findBestWorkerForTask(taskType);
     
     if (worker != nullptr) {
         worker->addTask(task);
-        std::cout << "📋 Task assigned to worker" << std::endl;
+        std::cout << "📋 Task assigned to " << worker->getName() 
+                  << " (Role: " << taskType << ")" << std::endl;
     } else {
+        // No suitable worker available, queue the task
         globalTaskQueue.push(task);
-        std::cout << "📋 Task queued (no available worker)" << std::endl;
+        std::cout << "📋 Task queued (no available " << taskType 
+                  << ") - Queue size: " << globalTaskQueue.size() << std::endl;
     }
 }
 
 void WorkScheduler::distributeTaskToWorkers(Command* task) {
-    if (task == nullptr) return;
+    if (task == nullptr) {
+        std::cerr << "WorkScheduler::distributeTaskToWorkers - null task" << std::endl;
+        return;
+    }
     
+    // Find any available worker
     Worker* worker = findAvailableWorker();
+    
     if (worker != nullptr) {
         worker->addTask(task);
+        std::cout << "📋 Task distributed to " << worker->getName() << std::endl;
     } else {
+        // Queue if no worker available
         globalTaskQueue.push(task);
+        std::cout << "📋 Task queued - Queue size: " << globalTaskQueue.size() << std::endl;
     }
 }
 
 void WorkScheduler::processGlobalTasks() {
+    if (globalTaskQueue.empty()) {
+        return;
+    }
+    
+    int tasksProcessed = 0;
+    
     while (!globalTaskQueue.empty()) {
+        // Find available worker
         Worker* worker = findAvailableWorker();
+        
         if (worker == nullptr) {
+            // No workers available, stop processing
             break;
         }
         
+        // Assign queued task to worker
         Command* task = globalTaskQueue.front();
         globalTaskQueue.pop();
         worker->addTask(task);
+        tasksProcessed++;
+    }
+    
+    if (tasksProcessed > 0) {
+        std::cout << "📋 Processed " << tasksProcessed << " queued task(s). "
+                  << "Remaining: " << globalTaskQueue.size() << std::endl;
     }
 }
 
-// Deprecated methods (kept for backwards compatibility)
-void WorkScheduler::notifyPlantNeedsWater(Plant* plant) {
-    onPlantNeedsWater(plant);
-}
-
-void WorkScheduler::notifyPlantRipe(Plant* plant) {
-    onPlantRipe(plant);
-}
+// ============================================
+// WORKER QUERIES
+// ============================================
 
 int WorkScheduler::getAvailableWorkerCount() const {
     int count = 0;
@@ -155,34 +226,63 @@ Worker* WorkScheduler::getWorkerById(int id) {
 
 std::vector<Worker*> WorkScheduler::getWorkersByRole(const std::string& role) {
     std::vector<Worker*> result;
+    
     for (auto* worker : workers) {
         if (worker->hasRole(role)) {
             result.push_back(worker);
         }
     }
+    
     return result;
 }
 
+// ============================================
+// DAILY OPERATIONS
+// ============================================
+
 void WorkScheduler::payAllWorkers(double& balance) {
-    std::cout << "\n💰 Paying all workers..." << std::endl;
+    if (workers.empty()) {
+        std::cout << "\n💰 No workers to pay" << std::endl;
+        return;
+    }
+    
+    std::cout << "\n╔════════════════════════════════════════╗" << std::endl;
+    std::cout << "║          DAILY PAYROLL                 ║" << std::endl;
+    std::cout << "╚════════════════════════════════════════╝" << std::endl;
+    std::cout << "Current Balance: $" << balance << std::endl;
+    
+    double totalPaid = 0.0;
+    int workersPaid = 0;
     
     for (auto* worker : workers) {
         double salary = worker->getSalary();
         
         if (balance >= salary) {
             balance -= salary;
-            std::cout << "  Paid worker $" << salary << std::endl;
+            totalPaid += salary;
+            workersPaid++;
+            std::cout << "  ✓ Paid " << worker->getName() 
+                      << " (Level " << worker->getOverallLevel() << ") - $" 
+                      << salary << std::endl;
         } else {
-            std::cout << "  ⚠️  Not enough money!" << std::endl;
+            std::cout << "  ✗ INSUFFICIENT FUNDS to pay " << worker->getName() 
+                      << " (Need $" << salary << ")" << std::endl;
         }
     }
     
-    std::cout << "  Remaining: $" << balance << "\n" << std::endl;
+    std::cout << "\n─────────────────────────────────────────" << std::endl;
+    std::cout << "Workers Paid: " << workersPaid << "/" << workers.size() << std::endl;
+    std::cout << "Total Paid: $" << totalPaid << std::endl;
+    std::cout << "Remaining Balance: $" << balance << std::endl;
+    std::cout << "═════════════════════════════════════════\n" << std::endl;
 }
 
 void WorkScheduler::updateAllWorkers(float deltaTime) {
+    // Update each worker
     for (auto* worker : workers) {
         worker->update(deltaTime);
     }
+    
+    // Process any queued tasks if workers become available
     processGlobalTasks();
 }
