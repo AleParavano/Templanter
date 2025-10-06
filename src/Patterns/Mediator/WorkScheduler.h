@@ -4,6 +4,7 @@
 #include <vector>
 #include <queue>
 #include <string>
+#include "Patterns/Observer/Observer.h"  // ← ADD THIS
 
 // Forward declarations
 class Worker;
@@ -11,7 +12,8 @@ class Plant;
 class Command;
 
 // Mediator Pattern: Coordinates workers and tasks
-class WorkScheduler {
+// Also implements Observer Pattern to watch plants
+class WorkScheduler : public PlantObserver {  // ← ADD THIS INHERITANCE
 private:
     std::vector<Worker*> workers;
     std::queue<Command*> globalTaskQueue;
@@ -24,6 +26,11 @@ public:
     WorkScheduler();
     ~WorkScheduler();
     
+    // Observer Pattern implementation
+    void onPlantNeedsWater(Plant* plant) override;
+    void onPlantRipe(Plant* plant) override;
+    void onPlantDecaying(Plant* plant) override;
+    
     // Worker management
     void registerWorker(Worker* worker);
     void unregisterWorker(Worker* worker);
@@ -34,7 +41,7 @@ public:
     void distributeTaskToWorkers(Command* task);
     void processGlobalTasks();
     
-    // Notifications (called by observers)
+    // Notifications (deprecated - now uses Observer pattern)
     void notifyPlantNeedsWater(Plant* plant);
     void notifyPlantRipe(Plant* plant);
     

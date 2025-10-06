@@ -5,9 +5,6 @@
 #include <iostream>
 #include <algorithm>
 
-// Don't include these in the .cpp to avoid circular dependencies:
-// Instead, we'll use forward declarations and keep implementation simple
-
 WorkScheduler::WorkScheduler() {
 }
 
@@ -19,6 +16,43 @@ WorkScheduler::~WorkScheduler() {
         delete cmd;
     }
 }
+
+// ============================================
+// Observer Pattern Implementation
+// ============================================
+void WorkScheduler::onPlantNeedsWater(Plant* plant) {
+    if (plant == nullptr) return;
+    
+    std::cout << "🚨 WorkScheduler: Plant needs water!" << std::endl;
+    
+    // Create water command
+    Command* waterCmd = new WaterPlantCommand(nullptr, plant);
+    assignTask(waterCmd, "Waterer");
+}
+
+void WorkScheduler::onPlantRipe(Plant* plant) {
+    if (plant == nullptr) return;
+    
+    std::cout << "✅ WorkScheduler: Plant is ripe!" << std::endl;
+    
+    // Create harvest command
+    Command* harvestCmd = new HarvestPlantCommand(nullptr, plant);
+    assignTask(harvestCmd, "Harvester");
+}
+
+void WorkScheduler::onPlantDecaying(Plant* plant) {
+    if (plant == nullptr) return;
+    
+    std::cout << "⚠️  WorkScheduler: Plant is decaying!" << std::endl;
+    
+    // Priority harvest before it dies
+    Command* harvestCmd = new HarvestPlantCommand(nullptr, plant);
+    assignTask(harvestCmd, "Harvester");
+}
+
+// ============================================
+// Rest of the implementation stays the same
+// ============================================
 
 void WorkScheduler::registerWorker(Worker* worker) {
     if (worker != nullptr) {
@@ -91,14 +125,13 @@ void WorkScheduler::processGlobalTasks() {
     }
 }
 
+// Deprecated methods (kept for backwards compatibility)
 void WorkScheduler::notifyPlantNeedsWater(Plant* plant) {
-    std::cout << "🚨 WorkScheduler: Plant needs water" << std::endl;
-    // Implementation simplified for now
+    onPlantNeedsWater(plant);
 }
 
 void WorkScheduler::notifyPlantRipe(Plant* plant) {
-    std::cout << "✅ WorkScheduler: Plant is ripe" << std::endl;
-    // Implementation simplified for now
+    onPlantRipe(plant);
 }
 
 int WorkScheduler::getAvailableWorkerCount() const {
