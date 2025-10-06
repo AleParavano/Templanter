@@ -7,7 +7,9 @@
 #include "TimeManager.h"
 #include "SaveManager.h"
 #include "Config.h"
-#include "../Greenhouse/Plant.h"
+#include "Patterns/Memento/Caretaker.h"
+#include "Patterns/Memento/GameMemento.h"
+#include "Greenhouse/Plant.h"
 
 // Forward declarations
 class Plant;
@@ -26,7 +28,7 @@ enum class GameState {
     SAVE_MENU
 };
 
-// Main game controller
+// Main game controller (Originator in Memento Pattern)
 class GameManager {
 private:
     // SFML
@@ -40,6 +42,7 @@ private:
     TimeManager* timeManager;
     SaveManager* saveManager;
     WorkScheduler* workScheduler;
+    Caretaker* caretaker;  // Memento Pattern: Caretaker
     
     // Game data
     double currency;
@@ -104,6 +107,12 @@ public:
     void pauseGame();
     void resumeGame();
     void quitGame();
+    
+    // Memento Pattern: Originator methods
+    void createSnapshot();
+    void restoreSnapshot(int index);
+    void undoToLastSnapshot();
+    void listSnapshots() const;
     
     // Player actions
     bool plantSeed(PlantType type, int x, int y);

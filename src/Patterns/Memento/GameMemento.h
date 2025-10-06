@@ -1,69 +1,31 @@
 #ifndef GAMEMEMENTO_H
 #define GAMEMEMENTO_H
 
-#include <string>
-#include <vector>
-#include "../../Core/GameData.h"
+#include "Core/GameData.h"
 
 // Memento Pattern: Immutable snapshot of game state
+// Only the Originator (GameManager) can create mementos
 class GameMemento {
 private:
-    friend class Game;
+    GameData state;
     
-    // Core game data
-    int day;
-    int hour;
-    int minute;
-    double currency;
-    double rating;
+    // Private constructor - only friends can create
+    GameMemento(const GameData& data) : state(data) {}
     
-    // Greenhouse data
-    std::vector<PlantData> plants;
-    int greenhouseWidth;
-    int greenhouseHeight;
+    friend class GameManager;  // Originator can create mementos
     
-    // Staff data
-    std::vector<WorkerData> workers;
-    
-    // Inventory
-    InventoryData inventory;
-    
-    // Statistics
-    StatisticsData statistics;
-    
-    // Metadata
-    std::string saveName;
-    std::string timestamp;
-    std::string version;
-    
-    // Private constructor - only Game can create
-    GameMemento(int d, int h, int m, double curr, double rat,
-                const std::vector<PlantData>& p, int ghW, int ghH,
-                const std::vector<WorkerData>& w,
-                const InventoryData& inv,
-                const StatisticsData& stats);
-
 public:
-    // Serialization
-    std::string toJSON() const;
-    static GameMemento fromJSON(const std::string& jsonStr);
+    // Read-only access to state (for Caretaker and restoration)
+    const GameData& getState() const { return state; }
     
-    // Factory method for testing purposes ONLY
-    static GameMemento createTestMemento(
-        int d, int h, int m, double curr, double rat,
-        const std::vector<PlantData>& p, int ghW, int ghH,
-        const std::vector<WorkerData>& w,
-        const InventoryData& inv,
-        const StatisticsData& stats
-    ) {
-        return GameMemento(d, h, m, curr, rat, p, ghW, ghH, w, inv, stats);
-    }
+    // Convenience accessors for metadata
+    std::string getSaveName() const { return state.saveName; }
+    std::string getTimestamp() const { return state.timestamp; }
+    int getDay() const { return state.time.day; }
+    double getCurrency() const { return state.economy.currency; }
     
-    // Getters for metadata (read-only access)
-    std::string getSaveName() const { return saveName; }
-    std::string getTimestamp() const { return timestamp; }
-    int getDay() const { return day; }
-    double getCurrency() const { return currency; }
+    // Display
+    void printSummary() const { state.printSummary(); }
 };
 
 #endif // GAMEMEMENTO_H

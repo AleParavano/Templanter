@@ -1,47 +1,76 @@
 #ifndef SAVEMANAGER_H
 #define SAVEMANAGER_H
 
-#include <string>
-#include <vector>
-#include "../Patterns/Memento/GameMemento.h"
-#include "Config.h"
+#include "Patterns/Memento/Caretaker.h"
 
-// Singleton Pattern: Manages save/load operations
-// Caretaker in Memento Pattern: Stores and retrieves mementos
+// Singleton wrapper around Caretaker for convenient global access
 class SaveManager {
 private:
     static SaveManager* instance;
+    Caretaker* caretaker;
     
-    std::string saveDirectory;
+    SaveManager() {
+        caretaker = new Caretaker(10);  // Max 10 snapshots
+    }
     
-    // Private constructor for Singleton
-    SaveManager();
-    
-    // Helper methods
-    std::string getSaveFilePath(const std::string& slotName) const;
-    bool ensureSaveDirectoryExists();
-
 public:
-    // Singleton access
-    static SaveManager* getInstance();
-    static void destroyInstance();
+    static SaveManager* getInstance() {
+        if (instance == nullptr) {
+            instance = new SaveManager();
+        }
+        return instance;
+    }
+    
+    static void destroyInstance() {
+        if (instance != nullptr) {
+            delete instance->caretaker;
+            delete instance;
+            instance = nullptr;
+        }
+    }
     
     // Delete copy constructor and assignment
     SaveManager(const SaveManager&) = delete;
     SaveManager& operator=(const SaveManager&) = delete;
     
-    // Save operations
-    bool saveGame(const GameMemento& memento, const std::string& slotName);
-    GameMemento loadGame(const std::string& slotName);
+    // Delegate all operations to caretaker
+    void saveSnapshot(const GameMemento& memento) { 
+        caretaker->saveMemento(memento); 
+    }
     
-    // Utility
-    bool saveExists(const std::string& slotName) const;
-    std::vector<std::string> listSaves() const;
-    bool deleteSave(const std::string& slotName);
+    GameMemento loadSnapshot(int index) { 
+        return caretaker->getMemento(index); 
+    }
     
-    // Slot management
-    std::string getSlotFileName(int slotNumber) const;
-    std::vector<GameMemento> loadAllSaveSlots() const;
+    GameMemento getLatestSnapshot() { 
+        return caretaker->getLatestMemento(); 
+    }
+    
+    GameMemento undo() { 
+        return caretaker->undo(); 
+    }
+    
+    // Query methods
+    int getSnapshotCount() const { 
+        return caretaker->getSnapshotCount(); 
+    }
+    
+    bool hasSnapshots() const { 
+        return caretaker->hasSnapshots(); 
+    }
+    
+    bool canUndo() const { 
+        return caretaker->canUndo(); 
+    }
+    
+    // Management
+    void clearAll() { 
+        caretaker->clear(); 
+    }
+    
+    void listAll() const { 
+        caretaker->listSnapshots(); 
+    }
 };
 
 #endif // SAVEMANAGER_H

@@ -2,19 +2,18 @@
 #include "Greenhouse/Plant.h"
 #include "Greenhouse/PlantTypes.h"
 #include "Staff/Worker.h"
+#include "Patterns/Decorator/WorkerRole.h"
 #include "Customer/Customer.h"
 #include "Patterns/Mediator/WorkScheduler.h"
 #include "Patterns/Composite/StorageComponent.h"
 #include "Patterns/Iterator/InventoryIterator.h"
 #include "Patterns/Factory/CustomerFactory.h"
 #include <iostream>
-#include "Patterns/Decorator/WorkerRole.h"  // ← ADD THIS
-
 
 GameManager::GameManager()
     : window(nullptr), currentState(GameState::MAIN_MENU),
-      currency(Config::STARTING_MONEY), customerRating(Config::STARTING_RATING),
-      greenhouseWidth(Config::INITIAL_GRID_WIDTH), greenhouseHeight(Config::INITIAL_GRID_HEIGHT),
+      currency(500.0), customerRating(3.0),
+      greenhouseWidth(3), greenhouseHeight(3),
       selectedPlant(nullptr), selectedWorker(nullptr),
       selectedTileX(-1), selectedTileY(-1),
       customerSpawnTimer(0.0f), dayTimer(0.0f),
@@ -26,6 +25,7 @@ GameManager::GameManager()
     
     // Initialize managers
     workScheduler = new WorkScheduler();
+    caretaker = new Caretaker(10);  // Max 10 snapshots
     
     // Initialize storage
     mainStorage = new StorageContainer("Main Warehouse", 1000);
@@ -54,6 +54,7 @@ GameManager::~GameManager() {
     delete workScheduler;
     delete mainStorage;
     delete inventory;
+    delete caretaker;
     delete window;
     
     // Destroy singletons
@@ -69,9 +70,12 @@ void GameManager::initializeWindow() {
     );
     window->setFramerateLimit(Config::FPS_LIMIT);
     
-    // Try to load font (will fail silently for now since we don't have assets)
+    // Try to load font (optional - game works without it)
     if (!font.loadFromFile(Config::FONTS_PATH + "arial.ttf")) {
-        std::cout << "Warning: Could not load font" << std::endl;
+        std::cout << "⚠️  Warning: Could not load font (will use shapes instead)" << std::endl;
+        std::cout << "   Game will work fine, text just won't display." << std::endl;
+    } else {
+        std::cout << "✓ Font loaded successfully" << std::endl;
     }
 }
 
@@ -103,6 +107,9 @@ void GameManager::initializeGame() {
     std::cout << "✓ Greenhouse size: " << greenhouseWidth << "x" << greenhouseHeight << std::endl;
     std::cout << "✓ Starting worker: " << starter->getName() << std::endl;
     std::cout << "\nGame initialized! Press SPACE to start." << std::endl;
+    
+    // Create initial snapshot
+    createSnapshot();
 }
 
 void GameManager::run() {
@@ -135,6 +142,8 @@ void GameManager::handleInput() {
                         pauseGame();
                     } else if (currentState == GameState::PAUSED) {
                         resumeGame();
+                    } else {
+                        window->close();
                     }
                     break;
                     
@@ -145,8 +154,23 @@ void GameManager::handleInput() {
                     break;
                     
                 case sf::Keyboard::S:
-                    if (currentState == GameState::PLAYING && sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
-                        saveGame("quicksave");
+                    if (currentState == GameState::PLAYING && 
+                        sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+                        createSnapshot();
+                    }
+                    break;
+                    
+                case sf::Keyboard::L:
+                    if (currentState == GameState::PLAYING && 
+                        sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+                        listSnapshots();
+                    }
+                    break;
+                    
+                case sf::Keyboard::U:
+                    if (currentState == GameState::PLAYING && 
+                        sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+                        undoToLastSnapshot();
                     }
                     break;
                     
@@ -281,8 +305,8 @@ void GameManager::drawUI() {
     window->draw(topBar);
     
     // Draw text (simplified - using shapes for now since font might not load)
-    sf::Text infoText;
     if (font.getInfo().family != "") {
+        sf::Text infoText;
         infoText.setFont(font);
         infoText.setCharacterSize(16);
         infoText.setFillColor(sf::Color::White);
@@ -290,7 +314,8 @@ void GameManager::drawUI() {
         std::string info = "Day " + std::to_string(timeManager->getCurrentDay()) + 
                           " | " + timeManager->getTimeString() +
                           " | $" + std::to_string(static_cast<int>(currency)) +
-                          " | Rating: " + std::to_string(static_cast<int>(customerRating)) + "/5";
+                          " | Rating: " + std::to_string(static_cast<int>(customerRating)) + "/5" +
+                          " | Snapshots: " + std::to_string(caretaker->getSnapshotCount());
         
         infoText.setString(info);
         infoText.setPosition(10, 10);
@@ -329,7 +354,7 @@ void GameManager::drawPlantInfo(Plant* plant) {
 }
 
 void GameManager::drawWorkerInfo(Worker* worker) {
-    // Similar to plant info
+    // Similar to plant info (placeholder)
 }
 
 void GameManager::drawMainMenu() {
@@ -372,6 +397,14 @@ void GameManager::drawPauseMenu() {
         pauseText.setString("PAUSED");
         pauseText.setPosition(Config::WINDOW_WIDTH / 2 - 80, Config::WINDOW_HEIGHT / 2 - 50);
         window->draw(pauseText);
+        
+        sf::Text helpText;
+        helpText.setFont(font);
+        helpText.setCharacterSize(16);
+        helpText.setFillColor(sf::Color::White);
+        helpText.setString("Ctrl+S: Save Snapshot\nCtrl+L: List Snapshots\nCtrl+U: Undo\nESC: Resume");
+        helpText.setPosition(Config::WINDOW_WIDTH / 2 - 100, Config::WINDOW_HEIGHT / 2 + 50);
+        window->draw(helpText);
     }
 }
 
@@ -383,13 +416,13 @@ void GameManager::startNewGame() {
 
 void GameManager::loadGame(const std::string& slotName) {
     std::cout << "Loading game from " << slotName << "..." << std::endl;
-    // TODO: Implement loading
+    // Not implemented - using snapshots instead
     currentState = GameState::PLAYING;
 }
 
 void GameManager::saveGame(const std::string& slotName) {
     std::cout << "💾 Saving game to " << slotName << "..." << std::endl;
-    // TODO: Implement saving using GameMemento
+    // Not implemented - using snapshots instead
 }
 
 void GameManager::pauseGame() {
@@ -407,6 +440,130 @@ void GameManager::resumeGame() {
 void GameManager::quitGame() {
     window->close();
 }
+
+// ============================================
+// MEMENTO PATTERN: ORIGINATOR METHODS
+// ============================================
+
+void GameManager::createSnapshot() {
+    // Create GameData from current state
+    GameData data;
+    
+    // Time
+    data.time = TimeData(
+        timeManager->getCurrentDay(), 
+        timeManager->getCurrentHour(), 
+        timeManager->getCurrentMinute()
+    );
+    
+    // Economy
+    data.economy = EconomyData(currency, customerRating);
+    
+    // Greenhouse
+    data.greenhouse = GreenhouseData(greenhouseWidth, greenhouseHeight);
+    
+    // Serialize plants
+    for (Plant* plant : plants) {
+        if (plant != nullptr) {
+            data.greenhouse.plants.push_back(plant->serialize());
+        }
+    }
+    
+    // Serialize workers
+    for (Worker* worker : workers) {
+        data.workers.push_back(worker->serialize());
+    }
+    
+    // Statistics
+    data.statistics.totalPlantsGrown = totalPlantsGrown;
+    data.statistics.totalCustomersServed = totalCustomersServed;
+    data.statistics.totalMoneyEarned = totalMoneyEarned;
+    
+    data.generateSaveName();
+    data.generateTimestamp();
+    
+    // Create memento and save to caretaker
+    GameMemento memento(data);
+    caretaker->saveMemento(memento);
+    
+    std::cout << "📸 Game snapshot created: " << data.saveName << std::endl;
+}
+
+void GameManager::restoreSnapshot(int index) {
+    try {
+        GameMemento memento = caretaker->getMemento(index);
+        const GameData& data = memento.getState();
+        
+        std::cout << "\n📂 Restoring snapshot: " << data.saveName << std::endl;
+        
+        // Restore economy
+        currency = data.economy.currency;
+        customerRating = data.economy.rating;
+        
+        // Restore time
+        timeManager->setDay(data.time.day);
+        timeManager->setTime(data.time.hour, data.time.minute);
+        
+        // Clear and restore plants
+        for (Plant* plant : plants) {
+            delete plant;
+        }
+        plants.clear();
+        plants.resize(greenhouseWidth * greenhouseHeight, nullptr);
+        
+        for (const PlantData& pd : data.greenhouse.plants) {
+            int index = pd.posY * greenhouseWidth + pd.posX;
+            if (index >= 0 && index < static_cast<int>(plants.size())) {
+                plants[index] = Plant::deserialize(pd);
+            }
+        }
+        
+        // Clear and restore workers
+        for (Worker* worker : workers) {
+            delete worker;
+        }
+        workers.clear();
+        
+        for (const WorkerData& wd : data.workers) {
+            Worker* worker = Worker::deserialize(wd);
+            workers.push_back(worker);
+            workScheduler->registerWorker(worker);
+        }
+        
+        // Restore statistics
+        totalPlantsGrown = data.statistics.totalPlantsGrown;
+        totalCustomersServed = data.statistics.totalCustomersServed;
+        totalMoneyEarned = data.statistics.totalMoneyEarned;
+        
+        std::cout << "✅ Snapshot restored successfully!" << std::endl;
+        data.printSummary();
+        
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Failed to restore snapshot: " << e.what() << std::endl;
+    }
+}
+
+void GameManager::undoToLastSnapshot() {
+    try {
+        GameMemento memento = caretaker->undo();
+        std::cout << "\n⏪ Undoing to previous state..." << std::endl;
+        
+        // Get the new "current" state after undo
+        int newIndex = caretaker->getSnapshotCount() - 1;
+        restoreSnapshot(newIndex);
+        
+    } catch (const std::exception& e) {
+        std::cerr << "❌ Cannot undo: " << e.what() << std::endl;
+    }
+}
+
+void GameManager::listSnapshots() const {
+    caretaker->listSnapshots();
+}
+
+// ============================================
+// PLAYER ACTIONS
+// ============================================
 
 bool GameManager::plantSeed(PlantType type, int x, int y) {
     if (x < 0 || x >= greenhouseWidth || y < 0 || y >= greenhouseHeight) {
@@ -429,7 +586,7 @@ bool GameManager::plantSeed(PlantType type, int x, int y) {
     
     currency -= info.seedCost;
     
-    int plantId = plants.size();
+    int plantId = static_cast<int>(plants.size());
     Plant* newPlant = new Plant(plantId, type, x, y);
     plants[index] = newPlant;
     
@@ -506,7 +663,7 @@ bool GameManager::hireWorker(const std::string& name) {
     
     currency -= Config::WORKER_HIRE_COST;
     
-    int workerId = workers.size() + 1;
+    int workerId = static_cast<int>(workers.size()) + 1;
     Worker* newWorker = new Worker(workerId, name);
     workers.push_back(newWorker);
     workScheduler->registerWorker(newWorker);
@@ -563,4 +720,7 @@ void GameManager::updateWorkers(float deltaTime) {
 void GameManager::checkDayEnd() {
     std::cout << "\n🌙 End of Day " << timeManager->getCurrentDay() << std::endl;
     workScheduler->payAllWorkers(currency);
+    
+    // Auto-create snapshot at end of day
+    createSnapshot();
 }

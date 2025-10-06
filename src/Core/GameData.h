@@ -3,31 +3,25 @@
 
 #include <string>
 #include <vector>
-#include "json.hpp"
+#include <ctime>
 
-using json = nlohmann::json;
+// ============================================
+// DATA STRUCTURES (Pure C++ - No I/O)
+// ============================================
 
-// Forward declarations
-struct PlantData;
-struct WorkerData;
-struct InventoryData;
-struct StatisticsData;
-
-// Plant data structure
 struct PlantData {
     int id;
     std::string type;
     int posX, posY;
     std::string state;
-    int growthProgress;
+    float growthProgress;
     int waterLevel;
-    long lastWateredTime;
+    std::time_t lastWateredTime;
     
-    json toJson() const;
-    static PlantData fromJson(const json& j);
+    PlantData() : id(0), posX(0), posY(0), growthProgress(0.0f), 
+                  waterLevel(100), lastWateredTime(0) {}
 };
 
-// Worker data structure
 struct WorkerData {
     int id;
     std::string name;
@@ -41,22 +35,29 @@ struct WorkerData {
     std::string currentRole;
     int assignedZone;
     
-    json toJson() const;
-    static WorkerData fromJson(const json& j);
+    WorkerData() : id(0), wateringSkill(1), harvestingSkill(1), 
+                   cashierSkill(1), securitySkill(1), overallLevel(1),
+                   experience(0), salary(50.0), assignedZone(-1) {}
 };
 
-// Inventory data structure
+struct InventoryItemData {
+    std::string itemType;
+    std::string itemName;
+    int quantity;
+    
+    InventoryItemData() : quantity(0) {}
+    InventoryItemData(const std::string& type, const std::string& name, int qty)
+        : itemType(type), itemName(name), quantity(qty) {}
+};
+
 struct InventoryData {
-    std::vector<std::pair<std::string, int>> harvestedPlants;  // plantType, quantity
-    std::vector<std::pair<std::string, int>> seeds;            // seedType, quantity
+    std::vector<InventoryItemData> items;
     int nutrients;
     int storageCapacity;
     
-    json toJson() const;
-    static InventoryData fromJson(const json& j);
+    InventoryData() : nutrients(0), storageCapacity(100) {}
 };
 
-// Statistics data structure
 struct StatisticsData {
     int totalPlantsGrown;
     double totalMoneyEarned;
@@ -64,8 +65,59 @@ struct StatisticsData {
     int totalRobberiesStopped;
     std::vector<std::string> achievementsUnlocked;
     
-    json toJson() const;
-    static StatisticsData fromJson(const json& j);
+    StatisticsData() : totalPlantsGrown(0), totalMoneyEarned(0.0),
+                       totalCustomersServed(0), totalRobberiesStopped(0) {}
+};
+
+struct TimeData {
+    int day;
+    int hour;
+    int minute;
+    
+    TimeData() : day(1), hour(6), minute(0) {}
+    TimeData(int d, int h, int m) : day(d), hour(h), minute(m) {}
+};
+
+struct EconomyData {
+    double currency;
+    double rating;
+    
+    EconomyData() : currency(500.0), rating(3.0) {}
+    EconomyData(double c, double r) : currency(c), rating(r) {}
+};
+
+struct GreenhouseData {
+    int width;
+    int height;
+    std::vector<PlantData> plants;
+    
+    GreenhouseData() : width(3), height(3) {}
+    GreenhouseData(int w, int h) : width(w), height(h) {}
+};
+
+// ============================================
+// COMPLETE GAME STATE
+// ============================================
+
+class GameData {
+public:
+    // Metadata
+    std::string saveName;
+    std::string timestamp;
+    
+    // Core game state
+    TimeData time;
+    EconomyData economy;
+    GreenhouseData greenhouse;
+    std::vector<WorkerData> workers;
+    InventoryData inventory;
+    StatisticsData statistics;
+    
+    GameData();
+    
+    void generateSaveName();
+    void generateTimestamp();
+    void printSummary() const;
 };
 
 #endif // GAMEDATA_H
